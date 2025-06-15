@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Peta Desa Wisata</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    body {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    
+    #map {
+      height: 70vh;
+      border-radius: 15px;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+      border: 3px solid white;
+    }
+    
+    .map-container {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 20px;
+      padding: 2rem;
+      margin: 2rem 0;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    }
+    
+    .map-header {
+      background: linear-gradient(45deg, #28a745, #20c997);
+      color: white;
+      border-radius: 15px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      text-align: center;
+    }
+    
+    .legend {
+      background: white;
+      padding: 1rem;
+      border-radius: 10px;
+      margin-top: 1rem;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      margin: 0.5rem 1rem;
+      font-size: 0.9rem;
+    }
+    
+    .legend-color {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      margin-right: 0.5rem;
+    }
+    
+    .btn-back {
+      background: linear-gradient(45deg, #6c757d, #495057);
+      border: none;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 25px;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+    }
+    
+    .btn-back:hover {
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+    
+    .map-controls {
+      background: white;
+      padding: 1rem;
+      border-radius: 10px;
+      margin-bottom: 1rem;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    
+    .desa-count {
+      background: linear-gradient(45deg, #17a2b8, #138496);
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      display: inline-block;
+    }
+    
+    /* Custom popup styling */
+    .leaflet-popup-content-wrapper {
+      border-radius: 10px;
+      box-shadow: 0 3px 14px rgba(0, 0, 0, 0.4);
+    }
+    
+    .popup-content {
+      max-width: 250px;
+    }
+    
+    .popup-title {
+      font-weight: bold;
+      color: #28a745;
+      margin-bottom: 0.5rem;
+    }
+    
+    .popup-location {
+      color: #6c757d;
+      font-size: 0.9rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    .popup-category {
+      margin-bottom: 0.5rem;
+    }
+    
+    .popup-description {
+      font-size: 0.85rem;
+      color: #495057;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container-fluid">
+    <div class="map-header">
+      <h1 class="fw-bold mb-3">
+        <i class="fas fa-map-marked-alt me-2"></i>
+        Peta Interaktif Desa Wisata
+      </h1>
+      <p class="mb-0 fs-5">Jelajahi lokasi desa wisata di Indonesia</p>
+    </div>
+
+    <div class="container">
+      <div class="map-container">
+        <div class="map-controls">
+          <div class="row align-items-center">
+            <div class="col-md-8">
+              <span class="desa-count">
+                <i class="fas fa-map-pin me-2"></i>
+                <span id="desaCount">{{ results|length if results else 0 }}</span> Desa Wisata
+              </span>
+            </div>
+            <div class="col-md-4 text-end">
+              <button class="btn btn-sm btn-outline-primary" onclick="fitMapToMarkers()">
+                <i class="fas fa-expand-arrows-alt me-1"></i>
+                Fit to View
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div id="map"></div>
+
+        <div class="legend">
+          <h6 class="mb-3">
+            <i class="fas fa-info-circle me-2"></i>
+            Legenda Kategori Wisata
+          </h6>
+          <div class="row">
+            <div class="col-md-6">
+              <div class="legend-item">
+                <div class="legend-color" style="background-color: #28a745;"></div>
+                <span>Alam</span>
+              </div>
+              <div class="legend-item">
+                <div class="legend-color" style="background-color: #dc3545;"></div>
+                <span>Budaya</span>
+              </div>
+              <div class="legend-item">
+                <div class="legend-color" style="background-color: #fd7e14;"></div>
+                <span>Kuliner</span>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="legend-item">
+                <div class="legend-color" style="background-color: #6f42c1;"></div>
+                <span>Religi</span>
+              </div>
+              <div class="legend-item">
+                <div class="legend-color" style="background-color: #20c997;"></div>
+                <span>Edukasi</span>
+              </div>
+              <div class="legend-item">
+                <div class="legend-color" style="background-color: #6c757d;"></div>
+                <span>Lainnya</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="text-center mt-4 mb-4">
+        <a href="/" class="btn-back">
+          <i class="fas fa-arrow-left me-2"></i>
+          Kembali ke Pencarian
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    // Initialize map
+    const map = L.map('map').setView([-2.5, 118.0], 5); // Center of Indonesia
+
+    // Add tile layer
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    // Category colors
+    const categoryColors = {
+      'Alam': '#28a745',
+      'Budaya': '#dc3545',
+      'Kuliner': '#fd7e14',
+      'Religi': '#6f42c1',
+      'Edukasi': '#20c997',
+      'Lainnya': '#6c757d'
+    };
+
+    // Store markers for fit bounds
+    const markers = [];
+
+    // Add markers for each desa
+    const desaData = {{ results | tojson | safe if results else '[]' }};
+    
+    desaData.forEach(function(desa) {
+      // Determine marker color based on category
+      let markerColor = categoryColors['Lainnya'];
+      if (desa.kategori_wisata) {
+        const categories = desa.kategori_wisata.split(', ');
+        if (categories.length > 0 && categoryColors[categories[0]]) {
+          markerColor = categoryColors[categories[0]];
+        }
+      }
+
+      // Create custom icon
+      const customIcon = L.divIcon({
+        html: `<div style="background-color: ${markerColor}; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3);"></div>`,
+        iconSize: [20, 20],
+        iconAnchor: [10, 10],
+        popupAnchor: [0, -10],
+        className: 'custom-marker'
+      });
+
+      // Create popup content
+      const popupContent = `
+        <div class="popup-content">
+          <div class="popup-title">${desa['NAMA DESA']}</div>
+          <div class="popup-location">
+            <i class="fas fa-map-marker-alt me-1"></i>
+            ${desa['NAMA KABUPATEN']}
+          </div>
+          <div class="popup-category">
+            ${desa.kategori_wisata ? 
+              desa.kategori_wisata.split(', ').map(cat => 
+                `<span class="badge" style="background-color: ${categoryColors[cat] || categoryColors['Lainnya']}; font-size: 0.7rem;">${cat}</span>`
+              ).join(' ') : 
+              '<span class="badge bg-secondary" style="font-size: 0.7rem;">Lainnya</span>'
+            }
+          </div>
+          <div class="popup-description">
+            ${desa.profil_desa ? 
+              (desa.profil_desa.length > 150 ? 
+                desa.profil_desa.substring(0, 150) + '...' : 
+                desa.profil_desa
+              ) : 
+              'Deskripsi tidak tersedia'
+            }
+          </div>
+        </div>
+      `;
+
+      // Add marker to map
+      const marker = L.marker([desa.latitude, desa.longitude], {
+        icon: customIcon
+      }).addTo(map).bindPopup(popupContent);
+
+      markers.push(marker);
+    });
+
+    // Function to fit map to all markers
+    function fitMapToMarkers() {
+      if (markers.length > 0) {
+        const group = new L.featureGroup(markers);
+        map.fitBounds(group.getBounds().pad(0.1));
+      }
+    }
+
+    // Fit to markers on load if there are results
+    if (desaData.length > 0) {
+      setTimeout(fitMapToMarkers, 500);
+    }
+
+    // Update count
+    document.getElementById('desaCount').textContent = desaData.length;
+
+    // Add scale control
+    L.control.scale().addTo(map);
+  </script>
+
+</body>
+</html>

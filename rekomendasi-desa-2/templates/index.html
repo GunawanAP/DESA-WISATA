@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Rekomendasi Desa Wisata</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <style>
+    body {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 800px;
+      margin-top: 40px;
+    }
+    .main-card {
+      backdrop-filter: blur(10px);
+      background: rgba(255, 255, 255, 0.9);
+      border: none;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    }
+    .title-section {
+      background: linear-gradient(45deg, #28a745, #20c997);
+      color: white;
+      border-radius: 15px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      text-align: center;
+    }
+    .filter-section {
+      background: #f8f9fa;
+      border-radius: 10px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .btn-search {
+      background: linear-gradient(45deg, #28a745, #20c997);
+      border: none;
+      padding: 12px 30px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="title-section">
+      <h1 class="fw-bold mb-3">
+        <i class="fas fa-mountain-sun me-2"></i>
+        Sistem Rekomendasi Desa Wisata
+      </h1>
+      <p class="mb-0 fs-5">Temukan destinasi desa wisata terbaik sesuai preferensi Anda</p>
+    </div>
+
+    <div class="card main-card">
+      <div class="card-body p-4">
+        <form action="/recommend" method="post">
+          
+          <!-- Filter Section -->
+          <div class="filter-section">
+            <h5 class="mb-3">
+              <i class="fas fa-filter me-2 text-primary"></i>
+              Filter Pencarian
+            </h5>
+            
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="kategori" class="form-label">Kategori Wisata</label>
+                <select class="form-select" id="kategori" name="kategori">
+                  <option value="semua">Semua Kategori</option>
+                  {% for kategori in kategori_list %}
+                  <option value="{{ kategori }}">{{ kategori }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              
+              <div class="col-md-6 mb-3">
+                <label for="kabupaten" class="form-label">Kabupaten</label>
+                <select class="form-select" id="kabupaten" name="kabupaten">
+                  <option value="semua">Semua Kabupaten</option>
+                  {% for kabupaten in kabupaten_list %}
+                  <option value="{{ kabupaten }}">{{ kabupaten }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Search Section -->
+          <div class="mb-4">
+            <label for="preferences" class="form-label">
+              <i class="fas fa-search me-2"></i>
+              Preferensi Wisata (Opsional)
+            </label>
+            <textarea 
+              class="form-control" 
+              id="preferences" 
+              name="preferences" 
+              rows="3" 
+              placeholder="Contoh: wisata alam yang sejuk, pemandangan gunung, air terjun, budaya tradisional...">
+            </textarea>
+            <div class="form-text">
+              <i class="fas fa-lightbulb me-1"></i>
+              Tips: Pisahkan dengan koma untuk preferensi yang lebih spesifik
+            </div>
+          </div>
+
+          <div class="d-grid gap-2">
+            <button type="submit" class="btn btn-search btn-success btn-lg">
+              <i class="fas fa-compass me-2"></i>
+              Cari Rekomendasi Desa Wisata
+            </button>
+            <a href="/map" class="btn btn-outline-light btn-lg">
+              <i class="fas fa-map-marked-alt me-2"></i>
+              Lihat Semua di Peta
+            </a>
+          </div>
+        </form>
+
+        <!-- Info Section -->
+        <div class="mt-4 p-3 bg-light rounded">
+          <h6 class="text-primary mb-2">
+            <i class="fas fa-info-circle me-2"></i>
+            Cara Menggunakan:
+          </h6>
+          <ul class="small mb-0">
+            <li>Pilih kategori wisata yang Anda minati</li>
+            <li>Pilih kabupaten tujuan (opsional)</li>
+            <li>Tambahkan preferensi spesifik di kolom pencarian</li>
+            <li>Klik tombol cari untuk mendapat rekomendasi terbaik</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // Dynamic filter: Update kabupaten based on kategori selection
+    document.getElementById('kategori').addEventListener('change', function() {
+      const selectedKategori = this.value;
+      const kabupatenSelect = document.getElementById('kabupaten');
+      
+      if (selectedKategori === 'semua') {
+        // Reset to show all kabupaten
+        return;
+      }
+      
+      // Fetch kabupaten based on kategori
+      fetch(`/api/kabupaten/${selectedKategori}`)
+        .then(response => response.json())
+        .then(data => {
+          kabupatenSelect.innerHTML = '<option value="semua">Semua Kabupaten</option>';
+          data.forEach(kabupaten => {
+            kabupatenSelect.innerHTML += `<option value="${kabupaten}">${kabupaten}</option>`;
+          });
+        })
+        .catch(error => {
+          console.error('Error fetching kabupaten:', error);
+        });
+    });
+  </script>
+
+</body>
+</html>

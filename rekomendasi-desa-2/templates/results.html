@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Hasil Rekomendasi Desa Wisata</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <style>
+    body {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+    }
+    .desa-card {
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      border: none;
+      border-radius: 15px;
+      overflow: hidden;
+      height: 100%;
+    }
+    .desa-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+    .card-header {
+      background: linear-gradient(45deg, #28a745, #20c997);
+      color: white;
+      border: none;
+      font-weight: bold;
+    }
+    .kategori-badge {
+      font-size: 0.8rem;
+      padding: 0.4rem 0.8rem;
+    }
+    .result-header {
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 15px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      backdrop-filter: blur(10px);
+    }
+    .no-results {
+      text-align: center;
+      color: white;
+      font-size: 1.2rem;
+    }
+    .btn-back {
+      background: linear-gradient(45deg, #6c757d, #495057);
+      border: none;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 25px;
+    }
+    .btn-back:hover {
+      color: white;
+      transform: translateY(-2px);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container py-4">
+    <div class="result-header text-center">
+      <h1 class="mb-3">
+        <i class="fas fa-map-marked-alt me-2 text-success"></i>
+        Hasil Rekomendasi Desa Wisata
+      </h1>
+      
+      {% if preferences %}
+      <p class="mb-2">
+        <strong>Pencarian:</strong> <em class="text-primary">{{ preferences }}</em>
+      </p>
+      {% endif %}
+      
+      <div class="row justify-content-center">
+        {% if selected_kategori and selected_kategori != 'semua' %}
+        <div class="col-auto">
+          <span class="badge bg-success kategori-badge">
+            <i class="fas fa-tag me-1"></i>{{ selected_kategori }}
+          </span>
+        </div>
+        {% endif %}
+        
+        {% if selected_kabupaten and selected_kabupaten != 'semua' %}
+        <div class="col-auto">
+          <span class="badge bg-info kategori-badge">
+            <i class="fas fa-map-marker-alt me-1"></i>{{ selected_kabupaten }}
+          </span>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if results %}
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+      {% for desa in results %}
+      <div class="col">
+        <div class="card desa-card shadow-sm h-100">
+          <div class="card-header">
+            <h5 class="card-title mb-0">
+              <i class="fas fa-home me-2"></i>
+              {{ desa['NAMA DESA'] }}
+            </h5>
+          </div>
+          
+          <div class="card-body d-flex flex-column">
+            <div class="mb-2">
+              <small class="text-muted">
+                <i class="fas fa-map-marker-alt me-1"></i>
+                {{ desa['NAMA KABUPATEN'] }}
+              </small>
+            </div>
+            
+            <div class="mb-3">
+              {% if desa['kategori_wisata'] and desa['kategori_wisata'] != 'Lainnya' %}
+                {% for kategori in desa['kategori_wisata'].split(', ') %}
+                <span class="badge bg-secondary kategori-badge me-1 mb-1">
+                  <i class="fas fa-star me-1"></i>{{ kategori }}
+                </span>
+                {% endfor %}
+              {% endif %}
+            </div>
+            
+            <p class="card-text flex-grow-1">
+              {{ desa['profil_desa'][:200] }}
+              {% if desa['profil_desa']|length > 200 %}...{% endif %}
+            </p>
+            
+            <div class="mt-auto">
+              <button class="btn btn-outline-primary btn-sm" onclick="toggleDescription(this)">
+                <i class="fas fa-eye me-1"></i>
+                Lihat Detail
+              </button>
+            </div>
+          </div>
+          
+          <!-- Hidden full description -->
+          <div class="card-footer d-none">
+            <small class="text-muted">{{ desa['profil_desa'] }}</small>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    
+    <div class="text-center mt-4">
+      <p class="text-white">
+        <i class="fas fa-info-circle me-2"></i>
+        Menampilkan {{ results|length }} desa wisata terbaik untuk Anda
+      </p>
+    </div>
+    
+    <!-- Map View Button -->
+    <div class="text-center mt-3">
+      <form action="/map/search" method="post" style="display: inline;">
+        <input type="hidden" name="preferences" value="{{ preferences }}">
+        <input type="hidden" name="kabupaten" value="{{ selected_kabupaten or 'semua' }}">
+        <input type="hidden" name="kategori" value="{{ selected_kategori or 'semua' }}">
+        <button type="submit" class="btn btn-info btn-lg">
+          <i class="fas fa-map-marked-alt me-2"></i>
+          Lihat di Peta Interaktif
+        </button>
+      </form>
+    </div>
+    
+    {% else %}
+    <div class="no-results">
+      <div class="card text-center">
+        <div class="card-body">
+          <i class="fas fa-search fa-3x text-muted mb-3"></i>
+          <h3>Tidak Ada Hasil</h3>
+          <p class="text-muted">
+            {% if message %}
+              {{ message }}
+            {% else %}
+              Maaf, tidak ditemukan desa wisata yang sesuai dengan kriteria pencarian Anda.
+            {% endif %}
+          </p>
+          <p class="text-muted">Coba ubah kata kunci atau filter pencarian Anda.</p>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="mt-5 text-center">
+      <a href="/" class="btn btn-back">
+        <i class="fas fa-arrow-left me-2"></i>
+        Kembali ke Pencarian
+      </a>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    function toggleDescription(button) {
+      const card = button.closest('.card');
+      const footer = card.querySelector('.card-footer');
+      const cardText = card.querySelector('.card-text');
+      
+      if (footer.classList.contains('d-none')) {
+        footer.classList.remove('d-none');
+        cardText.style.display = 'none';
+        button.innerHTML = '<i class="fas fa-eye-slash me-1"></i>Tutup Detail';
+        button.classList.remove('btn-outline-primary');
+        button.classList.add('btn-outline-secondary');
+      } else {
+        footer.classList.add('d-none');
+        cardText.style.display = 'block';
+        button.innerHTML = '<i class="fas fa-eye me-1"></i>Lihat Detail';
+        button.classList.remove('btn-outline-secondary');
+        button.classList.add('btn-outline-primary');
+      }
+    }
+  </script>
+
+</body>
+</html>
